@@ -187,6 +187,14 @@ class SimulatorTests(unittest.TestCase):
         self.assertLess(fed.hunger, hungry.hunger)
         self.assertGreater(fed.mood, hungry.mood)
 
+    def test_feed_has_minimal_effect_when_not_hungry(self) -> None:
+        full = self.pet.evolve(hunger=0.0, energy=78.0, mood=82.0, health=92.0)
+        fed = interact(full, "feed", self.now, self.tuning)
+        self.assertEqual(fed.hunger, 0.0)
+        self.assertEqual(fed.energy, full.energy)
+        self.assertEqual(fed.mood, full.mood)
+        self.assertEqual(fed.health, full.health)
+
     def test_sleep_restores_energy_over_time(self) -> None:
         sleepy = interact(self.pet.evolve(energy=20.0), "sleep", self.now, self.tuning)
         later = self.now + timedelta(hours=3)
