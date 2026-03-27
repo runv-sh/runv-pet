@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import sys
 import textwrap
 from datetime import datetime, timezone
 
@@ -37,38 +39,6 @@ PET_ART = {
  > ^ <
 """.strip("\n"),
     },
-    "fox": {
-        "happy": r"""
- /\   /\\
-((ovo ))
-():::()
-  V V
-""".strip("\n"),
-        "sleep": r"""
- /\   /\\
-((uvu )) z
-():::()
-  V V
-""".strip("\n"),
-        "tired": r"""
- /\   /\\
-((-v- ))
-():::()
-  V V
-""".strip("\n"),
-        "sick": r"""
- /\   /\\
-((xvx ))
-():::()
-  V V
-""".strip("\n"),
-        "dead": r"""
- /\   /\\
-((___ ))
-():::()
-  V V
-""".strip("\n"),
-    },
     "dog": {
         "happy": r"""
  / \__
@@ -104,6 +74,134 @@ PET_ART = {
  /         O
 /   (_____/
 /_____/   U
+""".strip("\n"),
+    },
+    "fox": {
+        "happy": r"""
+ /\   /\\
+((ovo ))
+():::()
+  V V
+""".strip("\n"),
+        "sleep": r"""
+ /\   /\\
+((uvu )) z
+():::()
+  V V
+""".strip("\n"),
+        "tired": r"""
+ /\   /\\
+((-v- ))
+():::()
+  V V
+""".strip("\n"),
+        "sick": r"""
+ /\   /\\
+((xvx ))
+():::()
+  V V
+""".strip("\n"),
+        "dead": r"""
+ /\   /\\
+((___ ))
+():::()
+  V V
+""".strip("\n"),
+    },
+    "rabbit": {
+        "happy": r"""
+ (\_/)
+ (o.o)
+ /|_|\\
+""".strip("\n"),
+        "sleep": r"""
+ (\_/)
+ (-.-) z
+ /|_|\\
+""".strip("\n"),
+        "tired": r"""
+ (\_/)
+ (-.-)
+ /|_|\\
+""".strip("\n"),
+        "sick": r"""
+ (\_/)
+ (x.x)
+ /|_|\\
+""".strip("\n"),
+        "dead": r"""
+ (\_/)
+ (_._)
+ /|_|\\
+""".strip("\n"),
+    },
+    "turtle": {
+        "happy": r"""
+  _____
+ / . .\\
+|  ---  |_
+ \_____/
+""".strip("\n"),
+        "sleep": r"""
+  _____
+ / - -\\ z
+|  ---  |_
+ \_____/
+""".strip("\n"),
+        "tired": r"""
+  _____
+ / - -\\
+|  ---  |_
+ \_____/
+""".strip("\n"),
+        "sick": r"""
+  _____
+ / x x\\
+|  ---  |_
+ \_____/
+""".strip("\n"),
+        "dead": r"""
+  _____
+ / _ _\\
+|  ---  |_
+ \_____/
+""".strip("\n"),
+    },
+    "bat": {
+        "happy": r"""
+ /\                 /\\
+/ \'._   (\_/)   _.'/ \\
+|.''._'--(o.o)--'_.''.|
+ \\_ / `;=/ \=;` \ _//
+   `\__| \___/ |__/`
+""".strip("\n"),
+        "sleep": r"""
+ /\                 /\\
+/ \'._   (\_/)   _.'/ \\
+|.''._'--(-.-)--'_.''.|
+ \\_ / `;=/ \=;` \ _//
+   `\__| \___/ |__/` z
+""".strip("\n"),
+        "tired": r"""
+ /\                 /\\
+/ \'._   (\_/)   _.'/ \\
+|.''._'--(-.-)--'_.''.|
+ \\_ / `;=/ \=;` \ _//
+   `\__| \___/ |__/`
+""".strip("\n"),
+        "sick": r"""
+ /\                 /\\
+/ \'._   (\_/)   _.'/ \\
+|.''._'--(x.x)--'_.''.|
+ \\_ / `;=/ \=;` \ _//
+   `\__| \___/ |__/`
+""".strip("\n"),
+        "dead": r"""
+ /\                 /\\
+/ \'._   (\_/)   _.'/ \\
+|.''._'--(_._)--'_.''.|
+ \\_ / `;=/ \=;` \ _//
+   `\__| \___/ |__/`
 """.strip("\n"),
     },
     "crow": {
@@ -288,18 +386,62 @@ RUNV_ART = {
 }
 
 
+ANSI = {
+    "reset": "\033[0m",
+    "title": "\033[1;36m",
+    "good": "\033[1;32m",
+    "warn": "\033[1;33m",
+    "bad": "\033[1;31m",
+    "dim": "\033[2m",
+    "cat": "\033[38;5;219m",
+    "dog": "\033[38;5;180m",
+    "fox": "\033[38;5;208m",
+    "rabbit": "\033[38;5;225m",
+    "turtle": "\033[38;5;71m",
+    "bat": "\033[38;5;141m",
+    "crow": "\033[38;5;250m",
+    "raven": "\033[38;5;245m",
+    "owl": "\033[38;5;110m",
+    "blob": "\033[38;5;117m",
+}
+
+
+def _supports_color() -> bool:
+    if os.environ.get("NO_COLOR"):
+        return False
+    if os.environ.get("TERM") == "dumb":
+        return False
+    return hasattr(sys.stdout, "isatty") and sys.stdout.isatty()
+
+
+def _paint(text: str, color: str | None) -> str:
+    if not color or not _supports_color():
+        return text
+    return f"{color}{text}{ANSI['reset']}"
+
+
+def _state_color(pet: Pet) -> str:
+    if not pet.alive or pet.health < 25:
+        return ANSI["bad"]
+    if pet.illness or pet.hunger > 70 or pet.energy < 35 or pet.hygiene < 40:
+        return ANSI["warn"]
+    return ANSI["good"]
+
+
 def pick_art(pet: Pet) -> str:
     species = normalize_species(pet.species)
     art = PET_ART.get(species, PET_ART["blob"])
     if not pet.alive:
-        return art["dead"]
-    if pet.is_sleeping:
-        return art["sleep"]
-    if pet.illness or pet.health < 35:
-        return art["sick"]
-    if pet.energy < 35 or pet.mood < 35:
-        return art["tired"]
-    return art["happy"]
+        mood = "dead"
+    elif pet.is_sleeping:
+        mood = "sleep"
+    elif pet.illness or pet.health < 35:
+        mood = "sick"
+    elif pet.energy < 35 or pet.mood < 35:
+        mood = "tired"
+    else:
+        mood = "happy"
+    return _paint(art[mood], ANSI.get(species))
 
 
 def bar(label: str, value: float, invert: bool = False, width: int = 22) -> str:
@@ -312,11 +454,27 @@ def bar(label: str, value: float, invert: bool = False, width: int = 22) -> str:
 
 def human_delta(from_dt: datetime, to_dt: datetime) -> str:
     delta = max(0, int((to_dt - from_dt).total_seconds()))
-    hours, rem = divmod(delta, 3600)
+    days, rem = divmod(delta, 86400)
+    hours, rem = divmod(rem, 3600)
     minutes, _ = divmod(rem, 60)
+    if days:
+        if days == 1:
+            return "1 dia"
+        return f"{days} dias"
     if hours:
-        return f"{hours}h {minutes}m"
-    return f"{minutes}m"
+        if hours == 1:
+            return "1 hora"
+        return f"{hours} horas"
+    if minutes <= 1:
+        return "1 minuto"
+    return f"{minutes} minutos"
+
+
+def human_ago(from_dt: datetime, to_dt: datetime) -> str:
+    delta = max(0, int((to_dt - from_dt).total_seconds()))
+    if delta < 60:
+        return "agora mesmo"
+    return f"{human_delta(from_dt, to_dt)} atras"
 
 
 def _pet_hint(pet: Pet) -> str:
@@ -339,14 +497,20 @@ def status_screen(pet: Pet, now: datetime) -> str:
     utc_now = now.astimezone(timezone.utc)
     created = pet.created_at.astimezone(timezone.utc)
     interaction = pet.last_interaction_at.astimezone(timezone.utc)
-    lines = [
-        "gotchi // habitat",
-        f"{pet.name} [{pet.species}]",
-        pick_art(pet),
+    header = _paint("gotchi // habitat", ANSI["title"])
+    name_line = _paint(f"{pet.name} [{pet.species}]", ANSI.get(normalize_species(pet.species)))
+    state_line = _paint(
         (
             f"Estado: {general_status(pet)} | Saude: {'doente' if pet.illness else 'estavel'} "
             f"| Vida: {'ativo' if pet.alive else 'encerrado'} | Sono: {'dormindo' if pet.is_sleeping else 'acordado'}"
         ),
+        _state_color(pet),
+    )
+    lines = [
+        header,
+        name_line,
+        pick_art(pet),
+        state_line,
         bar("fome", pet.hunger),
         bar("energia", pet.energy),
         bar("humor", pet.mood),
@@ -356,11 +520,14 @@ def status_screen(pet: Pet, now: datetime) -> str:
         textwrap.fill(pet.last_message, width=72),
         textwrap.fill(_pet_hint(pet), width=72),
         "",
-        f"Idade: {pet.age_hours / 24.0:.1f} dias | Criado ha: {human_delta(created, utc_now)}",
-        f"Ultima interacao: {human_delta(interaction, utc_now)} atras",
-        f"Ultimo update: {pet.last_update_at.isoformat()}",
+        f"Idade: {pet.age_hours / 24.0:.1f} dias | Criado: {human_ago(created, utc_now)}",
+        f"Ultima interacao: {human_ago(interaction, utc_now)}",
+        f"Ultimo update: {human_ago(pet.last_update_at, utc_now)}",
         "",
-        "Acoes: init | status | path | line | feed | play | sleep | clean | rename NOVO_NOME | doctor | migrate | export | import | help",
+        _paint(
+            "Acoes: init | status | path | line | feed | play | sleep | clean | rename NOVO_NOME | doctor | migrate | export | import | help",
+            ANSI["dim"],
+        ),
     ]
     if pet.cause_of_death:
         lines.insert(5, f"Causa da morte: {pet.cause_of_death}")
@@ -375,10 +542,10 @@ def runv_status_screen(status: ServerPetStatus) -> str:
         "critico": "hostil",
     }
     lines = [
-        "runv // observatorio",
-        "corvo do servidor",
-        RUNV_ART[status.status],
-        f"Estado geral: {status.status} | Ninho: {status.perch}",
+        _paint("runv // observatorio", ANSI["title"]),
+        _paint("corvo do servidor", ANSI["crow"]),
+        _paint(RUNV_ART[status.status], ANSI["crow"]),
+        _paint(f"Estado geral: {status.status} | Ninho: {status.perch}", ANSI["good"] if status.status in {"excelente", "bem"} else ANSI["warn"] if status.status == "atencao" else ANSI["bad"]),
         f"Ritmo do ar: {detail_map[status.load_state]}",
         f"Poleiro de dados: {detail_map[status.disk_state]}",
         f"Trilha de escrita: {detail_map[status.write_state]}",
@@ -390,7 +557,7 @@ def runv_status_screen(status: ServerPetStatus) -> str:
 
 
 def path_screen(report: dict[str, str]) -> str:
-    lines = ["gotchi // path", ""]
+    lines = [_paint("gotchi // path", ANSI["title"]), ""]
     for key in (
         "uid",
         "username",
@@ -410,9 +577,9 @@ def path_screen(report: dict[str, str]) -> str:
 
 def doctor_storage_screen(report: StorageDoctorReport) -> str:
     lines = [
-        "gotchi // storage doctor",
+        _paint("gotchi // storage doctor", ANSI["title"]),
         "",
-        f"resultado: {'ok' if report.ok else 'problemas encontrados'}",
+        _paint(f"resultado: {'ok' if report.ok else 'problemas encontrados'}", ANSI["good"] if report.ok else ANSI["warn"]),
         f"save_path: {report.save_path}",
         f"lock_path: {report.lock_path}",
         "",
@@ -422,7 +589,7 @@ def doctor_storage_screen(report: StorageDoctorReport) -> str:
 
 
 def migration_screen(report: MigrationReport) -> str:
-    lines = ["gotchi // migrate", "", report.message]
+    lines = [_paint("gotchi // migrate", ANSI["title"]), "", report.message]
     if report.source_path is not None:
         lines.append(f"origem: {report.source_path}")
     if report.backup_path is not None:

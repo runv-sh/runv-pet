@@ -23,7 +23,7 @@ from gotchi_app.config import Tuning, resolve_paths
 from gotchi_app.filelock import file_lock
 from gotchi_app.identity import UserIdentity
 from gotchi_app.runv_mode import inspect_server_pet
-from gotchi_app.simulator import apply_time, create_pet, interact
+from gotchi_app.simulator import SPECIES, apply_time, create_pet, interact
 from gotchi_app.storage import (
     doctor_storage,
     export_pet,
@@ -35,7 +35,7 @@ from gotchi_app.storage import (
     save_pet,
     update_pet,
 )
-from gotchi_app.ui import status_screen
+from gotchi_app.ui import human_ago, status_screen
 
 
 def workspace_case(name: str) -> Path:
@@ -215,6 +215,15 @@ class SimulatorTests(unittest.TestCase):
         self.assertIn("King [cat]", screen)
         self.assertIn("/\\_/\\", screen)
         self.assertNotIn("corvo", screen.lower())
+
+    def test_human_ago_prefers_words(self) -> None:
+        then = self.now - timedelta(hours=1, minutes=5)
+        self.assertEqual(human_ago(then, self.now), "1 hora atras")
+
+    def test_species_list_grew(self) -> None:
+        self.assertIn("rabbit", SPECIES)
+        self.assertIn("turtle", SPECIES)
+        self.assertIn("bat", SPECIES)
 
 
 class StorageTests(unittest.TestCase):

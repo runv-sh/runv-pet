@@ -8,7 +8,7 @@ from .config import Tuning
 from .models import Pet
 
 
-SPECIES = ("cat", "fox", "dog", "crow", "raven", "owl", "blob")
+SPECIES = ("cat", "dog", "fox", "rabbit", "turtle", "bat", "crow", "raven", "owl", "blob")
 
 
 SPECIES_ALIASES = {
@@ -17,6 +17,9 @@ SPECIES_ALIASES = {
     "kitten": "cat",
     "puppy": "dog",
     "wolf": "dog",
+    "bunny": "rabbit",
+    "bun": "rabbit",
+    "corvo": "crow",
 }
 
 
@@ -55,6 +58,22 @@ SPECIES_FLAVOR = {
         doctor="{name} recebeu cuidados e parece bem mais confortavel.",
         doctor_ok="{name} nao precisava de medico, mas aprovou a consulta.",
     ),
+    "dog": SpeciesFlavor(
+        arrival="Entrou abanando o rabo e adotou o terminal na hora.",
+        healthy="{name} esta feliz e pronto para acompanhar cada comando.",
+        okay="{name} esta bem, mas topa companhia e brincadeira.",
+        warning="{name} anda carente e nao quer ficar de lado.",
+        sleeping="{name} dorme tranquilo, guardando o terminal.",
+        sick="{name} parece cansado e precisa de ajuda.",
+        dead="O lugar de {name} ficou silencioso.",
+        feed="{name} comeu com vontade e ficou contente.",
+        play="{name} correu, pulou e voltou ofegante e feliz.",
+        sleep="{name} deitou para descansar por um tempo.",
+        sleep_again="{name} ja esta dormindo. Melhor deixar quieto.",
+        clean="{name} ficou limpo e bem mais confortavel.",
+        doctor="{name} recebeu cuidados e voltou a animar.",
+        doctor_ok="{name} nao precisava de medico, mas gostou da atencao.",
+    ),
     "fox": SpeciesFlavor(
         arrival="Chegou leve e atento, como se ja conhecesse cada canto do shell.",
         healthy="{name} circula pelo terminal com energia e curiosidade.",
@@ -71,21 +90,53 @@ SPECIES_FLAVOR = {
         doctor="{name} recebeu cuidados e voltou a se firmar.",
         doctor_ok="{name} estava bem, mas aceitou o check-up com elegancia.",
     ),
-    "dog": SpeciesFlavor(
-        arrival="Entrou abanando o rabo e adotou o terminal na hora.",
-        healthy="{name} esta feliz e pronto para acompanhar cada comando.",
-        okay="{name} esta bem, mas topa companhia e brincadeira.",
-        warning="{name} anda carente e nao quer ficar de lado.",
-        sleeping="{name} dorme tranquilo, guardando o terminal.",
-        sick="{name} parece cansado e precisa de ajuda.",
-        dead="O lugar de {name} ficou silencioso.",
-        feed="{name} comeu com vontade e ficou contente.",
-        play="{name} correu, pulou e voltou ofegante e feliz.",
-        sleep="{name} deitou para descansar por um tempo.",
-        sleep_again="{name} ja esta dormindo. Melhor deixar quieto.",
-        clean="{name} ficou limpo e bem mais confortavel.",
-        doctor="{name} recebeu cuidados e voltou a animar.",
-        doctor_ok="{name} nao precisava de medico, mas gostou da atencao.",
+    "rabbit": SpeciesFlavor(
+        arrival="Chegou aos pulinhos e fez do terminal um abrigo seguro.",
+        healthy="{name} parece leve, atento e muito confortavel.",
+        okay="{name} esta bem, mas quer um pouco mais de presenca.",
+        warning="{name} mexe o narizinho pedindo cuidado.",
+        sleeping="{name} cochila encolhido no proprio cantinho.",
+        sick="{name} parece fragil e precisa de ajuda.",
+        dead="O ninho de {name} ficou vazio.",
+        feed="{name} comeu contente e se acalmou por perto.",
+        play="{name} deu pulinhos pelo terminal e ficou mais animado.",
+        sleep="{name} se encolheu para um sono tranquilo.",
+        sleep_again="{name} ja esta dormindo. Melhor nao assustar.",
+        clean="{name} ficou bem cuidado e com o pelo em ordem.",
+        doctor="{name} recebeu cuidado e parece mais seguro agora.",
+        doctor_ok="{name} estava bem, mas aceitou o cuidado extra.",
+    ),
+    "turtle": SpeciesFlavor(
+        arrival="Apareceu devagar e assumiu um canto do terminal sem pressa.",
+        healthy="{name} segue firme, tranquilo e em bom estado.",
+        okay="{name} esta bem, mas aprecia rotina e atencao.",
+        warning="{name} se recolhe um pouco mais do que devia.",
+        sleeping="{name} descansa quieto, sem pressa de voltar.",
+        sick="{name} esta abatido e precisa de cuidado.",
+        dead="A trilha calma de {name} terminou aqui.",
+        feed="{name} comeu com calma e ficou satisfeito.",
+        play="{name} se mexeu mais do que o habitual e gostou da atividade.",
+        sleep="{name} se recolheu para descansar por um bom tempo.",
+        sleep_again="{name} ja esta dormindo. Melhor deixar em paz.",
+        clean="{name} ficou limpo e com o casco em ordem.",
+        doctor="{name} recebeu cuidados e voltou a se firmar.",
+        doctor_ok="{name} nao precisava de medico, mas tolerou a revisao.",
+    ),
+    "bat": SpeciesFlavor(
+        arrival="Surgiu do nada e se pendurou no terminal como se fosse casa.",
+        healthy="{name} esta desperto e se move com energia discreta.",
+        okay="{name} esta bem, mas quer um pouco mais de atencao.",
+        warning="{name} anda irritado e sensivel demais.",
+        sleeping="{name} dorme pendurado, em total sossego.",
+        sick="{name} perdeu o folego e precisa de ajuda.",
+        dead="A sombra de {name} desapareceu do terminal.",
+        feed="{name} se alimentou e voltou mais disposto.",
+        play="{name} fez uma volta rapida pelo terminal e voltou empolgado.",
+        sleep="{name} se pendurou para descansar.",
+        sleep_again="{name} ja esta dormindo. Melhor nao incomodar.",
+        clean="{name} se ajeitou e ficou bem mais confortavel.",
+        doctor="{name} recebeu cuidados e recuperou o ritmo.",
+        doctor_ok="{name} estava bem, mas aceitou a consulta.",
     ),
     "crow": SpeciesFlavor(
         arrival="Pousou no terminal e tomou posse do espaco.",
@@ -105,7 +156,7 @@ SPECIES_FLAVOR = {
     ),
     "raven": SpeciesFlavor(
         arrival="Chegou em silencio e assumiu o terminal como territorio.",
-        healthy="{name} mantém um olhar atento sobre cada linha do shell.",
+        healthy="{name} mantem um olhar atento sobre cada linha do shell.",
         okay="{name} esta bem, mas nao recusaria um gesto de cuidado.",
         warning="{name} anda impaciente e quer atencao.",
         sleeping="{name} dorme recolhido no alto do terminal.",
