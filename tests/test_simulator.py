@@ -194,6 +194,7 @@ class SimulatorTests(unittest.TestCase):
         self.assertEqual(fed.energy, full.energy)
         self.assertEqual(fed.mood, full.mood)
         self.assertEqual(fed.health, full.health)
+        self.assertIn("satisfeito", fed.last_message)
 
     def test_sleep_restores_energy_over_time(self) -> None:
         sleepy = interact(self.pet.evolve(energy=20.0), "sleep", self.now, self.tuning)

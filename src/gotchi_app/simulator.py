@@ -481,13 +481,16 @@ def interact(pet: Pet, action: str, now: datetime, tuning: Tuning) -> Pet:
 
     if action == "feed":
         hunger_before = hunger
-        hunger = clamp(hunger - 28)
-        hunger_relief = clamp(hunger_before - hunger, 0.0, 28.0)
-        feed_ratio = hunger_relief / 28.0 if hunger_relief > 0 else 0.0
-        energy = clamp(energy + (6 * feed_ratio))
-        mood = clamp(mood + (8 * feed_ratio))
-        health = clamp(health + (3 * feed_ratio))
-        message = flavor.feed.format(name=pet.name)
+        if hunger_before <= 5.0:
+            message = f"{pet.name} ja esta satisfeito. Melhor guardar o resto para depois."
+        else:
+            hunger = clamp(hunger - 28)
+            hunger_relief = clamp(hunger_before - hunger, 0.0, 28.0)
+            feed_ratio = hunger_relief / 28.0 if hunger_relief > 0 else 0.0
+            energy = clamp(energy + (6 * feed_ratio))
+            mood = clamp(mood + (8 * feed_ratio))
+            health = clamp(health + (3 * feed_ratio))
+            message = flavor.feed.format(name=pet.name)
     elif action == "play":
         hunger = clamp(hunger + 10)
         energy = clamp(energy - 14)

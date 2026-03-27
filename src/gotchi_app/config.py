@@ -197,7 +197,6 @@ def legacy_db_candidates(identity: UserIdentity | None = None) -> list[Path]:
     env_data = _env_path("XDG_DATA_HOME") or user.home.joinpath(".local", "share")
     candidates = [env_data / name / "gotchi.db" for name in LEGACY_APP_DIR_NAMES]
     candidates.append(user.home / ".gotchi-data" / "gotchi.db")
-    candidates.append(Path.cwd() / ".gotchi-data" / "gotchi.db")
     unique: list[Path] = []
     for candidate in candidates:
         if candidate not in unique:
