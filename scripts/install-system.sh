@@ -78,7 +78,7 @@ sync_source_tree() {
     --exclude='__pycache__' \
     --exclude='*.pyc' \
     -C "${ROOT_DIR}" \
-    -cf - pyproject.toml README.md src docs how.md 2>/dev/null | tar -C "${SOURCE_DIR}" -xf -
+    -cf - pyproject.toml README.md src docs 2>/dev/null | tar -C "${SOURCE_DIR}" -xf -
 
   install -m 0755 "${ROOT_DIR}/scripts/install-system.sh" "${INSTALL_DIR}/scripts/install-system.sh"
   install -m 0755 "${ROOT_DIR}/scripts/uninstall-system.sh" "${INSTALL_DIR}/scripts/uninstall-system.sh"
