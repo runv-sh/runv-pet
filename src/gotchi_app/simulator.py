@@ -15,9 +15,10 @@ def clamp(value: float, lower: float = 0.0, upper: float = 100.0) -> float:
     return max(lower, min(upper, value))
 
 
-def create_pet(username: str, name: str, species: str, now: datetime) -> Pet:
+def create_pet(owner_uid: int, username: str, name: str, species: str, now: datetime) -> Pet:
     species_name = species if species in SPECIES else SPECIES[0]
     return Pet(
+        owner_uid=owner_uid,
         username=username,
         name=name,
         species=species_name,

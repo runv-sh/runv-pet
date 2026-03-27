@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from .models import Pet
 from .runv_mode import ServerPetStatus
 from .simulator import general_status
+from .storage import MigrationReport, StorageDoctorReport
 
 
 ASCII_ART = {
@@ -153,7 +154,7 @@ def status_screen(pet: Pet, now: datetime) -> str:
         f"Ultima interacao: {human_delta(interaction, utc_now)} atras",
         f"Ultimo update: {pet.last_update_at.isoformat()}",
         "",
-        "Acoes: init | status | feed | play | sleep | clean | rename NOVO_NOME | doctor | help",
+        "Acoes: init | status | path | line | feed | play | sleep | clean | rename NOVO_NOME | doctor | migrate | export | import | help",
     ]
     if pet.cause_of_death:
         lines.insert(5, f"Causa da morte: {pet.cause_of_death}")
@@ -182,6 +183,57 @@ def runv_status_screen(status: ServerPetStatus) -> str:
     return "\n".join(lines)
 
 
+def path_screen(report: dict[str, str]) -> str:
+    lines = ["gotchi // path", ""]
+    for key in (
+        "uid",
+        "username",
+        "home",
+        "state_dir",
+        "config_dir",
+        "data_dir",
+        "save_path",
+        "lock_path",
+        "config_path",
+        "global_config_path",
+    ):
+        if key in report:
+            lines.append(f"{key:>18}: {report[key]}")
+    return "\n".join(lines)
+
+
+def doctor_storage_screen(report: StorageDoctorReport) -> str:
+    lines = [
+        "gotchi // storage doctor",
+        "",
+        f"resultado: {'ok' if report.ok else 'problemas encontrados'}",
+        f"save_path: {report.save_path}",
+        f"lock_path: {report.lock_path}",
+        "",
+    ]
+    lines.extend(report.checks)
+    return "\n".join(lines)
+
+
+def migration_screen(report: MigrationReport) -> str:
+    lines = ["gotchi // migrate", "", report.message]
+    if report.source_path is not None:
+        lines.append(f"origem: {report.source_path}")
+    if report.backup_path is not None:
+        lines.append(f"backup: {report.backup_path}")
+    return "\n".join(lines)
+
+
+def status_line(pet: Pet) -> str:
+    if not pet.alive:
+        return f"{pet.name} se foi. O poleiro ficou silencioso."
+    hunger_band = "atencao" if pet.hunger >= 70 else "ok"
+    mood_band = "otimo" if pet.mood >= 75 else "instavel" if pet.mood < 45 else "bom"
+    if pet.is_sleeping:
+        return f"{pet.name} dormiu bem. Humor: {mood_band}."
+    return f"{pet.name} esta por perto. Fome: {hunger_band}. Humor: {mood_band}."
+
+
 def help_text() -> str:
     return textwrap.dedent(
         """
@@ -191,12 +243,18 @@ def help_text() -> str:
           gotchi                 abre a tela textual principal
           gotchi init            cria seu pet
           gotchi status          mostra o estado atual
+          gotchi path            mostra caminhos e identidade efetiva
+          gotchi line            mostra uma linha curta para login/shell
           gotchi feed            alimenta o pet
           gotchi play            brinca com o pet
           gotchi sleep           coloca o pet para dormir
           gotchi clean           limpa o pet
           gotchi rename NOME     renomeia o pet
           gotchi doctor          tenta tratar doenca / recuperar saude
+          gotchi doctor --storage verifica storage, migracao e integridade
+          gotchi migrate         tenta migrar save legado
+          gotchi export [ARQ]    exporta o pet atual em JSON
+          gotchi import ARQ      importa backup do proprio usuario
           gotchi help            mostra esta ajuda
 
         Sem daemon:

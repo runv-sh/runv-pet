@@ -3,9 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 import os
 import shutil
-from pathlib import Path
 
-from .config import data_dir
+from .config import resolve_paths
+from .identity import resolve_identity
 
 
 @dataclass(frozen=True)
@@ -43,7 +43,7 @@ def _load_state() -> str:
 
 
 def _disk_state() -> str:
-    target = data_dir()
+    target = resolve_paths(resolve_identity()).data_dir
     usage = shutil.disk_usage(target)
     ratio = usage.used / max(usage.total, 1)
     return _state_from_ratio(ratio, 0.85, 0.93)
@@ -51,7 +51,7 @@ def _disk_state() -> str:
 
 def _write_state() -> str:
     try:
-        target = data_dir()
+        target = resolve_paths(resolve_identity()).data_dir
         probe = target / ".runv-touch"
         probe.write_text("ok", encoding="utf-8")
         probe.unlink(missing_ok=True)

@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass, asdict
+import stat
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from .identity import UserIdentity, resolve_identity
 
-APP_DIR_NAME = "runv-pet"
-CONFIG_FALLBACK_DIR_NAME = "runv-pet-config"
-DATA_FALLBACK_DIR_NAME = "runv-pet-data"
+
+APP_DIR_NAME = "gotchi"
+LEGACY_APP_DIR_NAMES = ("runv-pet", "runv-pet-data")
 CONFIG_FILE_NAME = "gotchi.json"
 
 
@@ -31,97 +33,173 @@ class Tuning:
         return json.dumps(asdict(self), indent=2, sort_keys=True)
 
 
-def xdg_data_home() -> Path:
-    return Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share"))
+@dataclass(frozen=True)
+class PathInfo:
+    identity: UserIdentity
+    state_dir: Path
+    config_dir: Path
+    data_dir: Path
+    save_path: Path
+    lock_path: Path
+    export_dir: Path
+    backup_dir: Path
+    migration_marker: Path
+    config_path: Path
+    global_config_path: Path | None
 
 
-def xdg_config_home() -> Path:
-    return Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+def _mode(path: Path) -> int:
+    return stat.S_IMODE(path.stat().st_mode)
 
 
-def _writable_candidates(base: Path, preferred_name: str, fallback_name: str) -> list[Path]:
-    return [
-        base / preferred_name,
-        base / fallback_name,
-        Path.home() / f".{preferred_name}",
-    ]
+def _env_path(name: str) -> Path | None:
+    value = os.environ.get(name)
+    if not value:
+        return None
+    path = Path(value).expanduser()
+    return path if path.is_absolute() else None
 
 
-def _materialize_first_writable(candidates: list[Path]) -> Path:
+def _materialize_private_dir(candidates: list[Path]) -> Path:
     errors = []
     for candidate in candidates:
         try:
             candidate.mkdir(parents=True, exist_ok=True)
+            try:
+                os.chmod(candidate, 0o700)
+            except OSError:
+                pass
             return candidate
         except OSError as exc:
             errors.append(f"{candidate}: {exc}")
     joined = "; ".join(errors)
-    raise OSError(f"Nao foi possivel preparar diretorio da aplicacao: {joined}")
+    raise OSError(f"Nao foi possivel preparar diretorio privado: {joined}")
 
 
-def _config_candidates() -> list[Path]:
-    return [
-        xdg_config_home() / APP_DIR_NAME / CONFIG_FILE_NAME,
-        xdg_config_home() / CONFIG_FALLBACK_DIR_NAME / CONFIG_FILE_NAME,
-        xdg_data_home() / APP_DIR_NAME / CONFIG_FILE_NAME,
-        Path.home() / f".{APP_DIR_NAME}" / CONFIG_FILE_NAME,
+def _private_dir_candidates(identity: UserIdentity, env_name: str, home_parts: tuple[str, ...], cwd_name: str) -> list[Path]:
+    uid_leaf = f"uid-{identity.uid}"
+    candidates: list[Path] = []
+    env_base = _env_path(env_name)
+    if env_base is not None:
+        candidates.append(env_base / APP_DIR_NAME / uid_leaf)
+    candidates.append(identity.home.joinpath(*home_parts) / APP_DIR_NAME / uid_leaf)
+    candidates.append(Path.cwd() / cwd_name / uid_leaf)
+    return candidates
+
+
+def _first_global_config() -> Path | None:
+    candidates = [
+        Path("/etc/xdg/gotchi") / CONFIG_FILE_NAME,
+        Path("/etc/gotchi") / CONFIG_FILE_NAME,
     ]
-
-
-def data_dir() -> Path:
-    return _materialize_first_writable(
-        _writable_candidates(xdg_data_home(), APP_DIR_NAME, DATA_FALLBACK_DIR_NAME)
-    )
-
-
-def config_dir() -> Path:
-    return config_path().parent
-
-
-def config_path() -> Path:
-    for candidate in _config_candidates():
+    for candidate in candidates:
         try:
             if candidate.exists() and candidate.is_file():
                 return candidate
         except OSError:
             continue
-    return _config_candidates()[0]
+    return None
 
 
-def ensure_directories() -> None:
-    data_dir()
+def resolve_paths(identity: UserIdentity | None = None) -> PathInfo:
+    user = identity or resolve_identity()
+    state_dir = _materialize_private_dir(_private_dir_candidates(user, "XDG_STATE_HOME", (".local", "state"), ".gotchi-state"))
+    config_dir = _materialize_private_dir(_private_dir_candidates(user, "XDG_CONFIG_HOME", (".config",), ".gotchi-config"))
+    data_dir = _materialize_private_dir(_private_dir_candidates(user, "XDG_DATA_HOME", (".local", "share"), ".gotchi-data"))
+    export_dir = _materialize_private_dir([data_dir / "exports"])
+    backup_dir = _materialize_private_dir([state_dir / "legacy-backups"])
+    save_path = state_dir / "pet.db"
+    lock_path = state_dir / "pet.lock"
+    migration_marker = state_dir / "migration.json"
+    config_path = config_dir / CONFIG_FILE_NAME
+    return PathInfo(
+        identity=user,
+        state_dir=state_dir,
+        config_dir=config_dir,
+        data_dir=data_dir,
+        save_path=save_path,
+        lock_path=lock_path,
+        export_dir=export_dir,
+        backup_dir=backup_dir,
+        migration_marker=migration_marker,
+        config_path=config_path,
+        global_config_path=_first_global_config(),
+    )
 
 
-def load_tuning() -> Tuning:
-    path = config_path()
-    try:
-        if not path.exists():
-            return Tuning()
-        with path.open("r", encoding="utf-8") as handle:
-            raw = json.load(handle)
-    except OSError:
-        return Tuning()
+def _load_json(path: Path) -> dict:
+    with path.open("r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def _merge_tuning(*configs: dict) -> Tuning:
     values = asdict(Tuning())
-    values.update({key: raw[key] for key in raw if key in values})
+    for config in configs:
+        values.update({key: config[key] for key in config if key in values})
     return Tuning(**values)
 
 
-def write_default_config(path: Path | None = None) -> Path:
+def load_tuning(identity: UserIdentity | None = None) -> Tuning:
+    paths = resolve_paths(identity)
+    global_config = {}
+    user_config = {}
+    if paths.global_config_path is not None:
+        try:
+            global_config = _load_json(paths.global_config_path)
+        except OSError:
+            global_config = {}
+    try:
+        if paths.config_path.exists():
+            user_config = _load_json(paths.config_path)
+    except OSError:
+        user_config = {}
+    return _merge_tuning(global_config, user_config)
+
+
+def write_default_config(identity: UserIdentity | None = None, path: Path | None = None) -> Path:
     if path is not None:
         target = path
         target.parent.mkdir(parents=True, exist_ok=True)
-        if not target.exists():
-            target.write_text(Tuning().to_json() + "\n", encoding="utf-8")
+        target.write_text(Tuning().to_json() + "\n", encoding="utf-8")
+        try:
+            os.chmod(target, 0o600)
+        except OSError:
+            pass
         return target
 
-    errors = []
-    for target in _config_candidates():
+    paths = resolve_paths(identity)
+    if not paths.config_path.exists():
+        paths.config_path.write_text(Tuning().to_json() + "\n", encoding="utf-8")
+    try:
+        os.chmod(paths.config_path, 0o600)
+    except OSError:
+        pass
+    return paths.config_path
+
+
+def permissions_report(paths: PathInfo) -> dict[str, str]:
+    report: dict[str, str] = {}
+    for label, target in (("state_dir", paths.state_dir), ("config_dir", paths.config_dir), ("data_dir", paths.data_dir)):
         try:
-            target.parent.mkdir(parents=True, exist_ok=True)
-            if not target.exists():
-                target.write_text(Tuning().to_json() + "\n", encoding="utf-8")
-            return target
-        except OSError as exc:
-            errors.append(f"{target}: {exc}")
-    joined = "; ".join(errors)
-    raise OSError(f"Nao foi possivel gravar configuracao padrao: {joined}")
+            report[label] = oct(_mode(target))
+        except OSError:
+            report[label] = "unavailable"
+    if paths.save_path.exists():
+        try:
+            report["save_path"] = oct(_mode(paths.save_path))
+        except OSError:
+            report["save_path"] = "unavailable"
+    return report
+
+
+def legacy_db_candidates(identity: UserIdentity | None = None) -> list[Path]:
+    user = identity or resolve_identity()
+    env_data = _env_path("XDG_DATA_HOME") or user.home.joinpath(".local", "share")
+    candidates = [env_data / name / "gotchi.db" for name in LEGACY_APP_DIR_NAMES]
+    candidates.append(user.home / ".gotchi-data" / "gotchi.db")
+    candidates.append(Path.cwd() / ".gotchi-data" / "gotchi.db")
+    unique: list[Path] = []
+    for candidate in candidates:
+        if candidate not in unique:
+            unique.append(candidate)
+    return unique

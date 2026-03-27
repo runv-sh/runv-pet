@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional
 
 @dataclass(frozen=True)
 class Pet:
+    owner_uid: int
     username: str
     name: str
     species: str
@@ -31,6 +32,7 @@ class Pet:
 
     def to_record(self) -> Dict[str, Any]:
         return {
+            "owner_uid": self.owner_uid,
             "username": self.username,
             "name": self.name,
             "species": self.species,
@@ -54,6 +56,7 @@ class Pet:
     @classmethod
     def from_record(cls, record: Dict[str, Any]) -> "Pet":
         return cls(
+            owner_uid=int(record.get("owner_uid", -1)),
             username=record["username"],
             name=record["name"],
             species=record["species"],
