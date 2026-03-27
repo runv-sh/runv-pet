@@ -210,9 +210,32 @@ class SimulatorTests(unittest.TestCase):
         self.assertIn("ja esta dormindo", same_sleep.last_message)
 
     def test_clean_improves_hygiene(self) -> None:
-        dirty = self.pet.evolve(hygiene=10.0)
+        dirty = self.pet.evolve(hygiene=10.0, mood=50.0)
         cleaned = interact(dirty, "clean", self.now, self.tuning)
         self.assertGreater(cleaned.hygiene, dirty.hygiene)
+        self.assertGreater(cleaned.mood, dirty.mood)
+
+    def test_play_costs_energy_and_improves_mood(self) -> None:
+        playful = self.pet.evolve(energy=70.0, mood=40.0, hunger=20.0, hygiene=70.0)
+        played = interact(playful, "play", self.now, self.tuning)
+        self.assertLess(played.energy, playful.energy)
+        self.assertGreater(played.mood, playful.mood)
+        self.assertGreater(played.hunger, playful.hunger)
+        self.assertLess(played.hygiene, playful.hygiene)
+
+    def test_doctor_focuses_on_health_when_needed(self) -> None:
+        weak = self.pet.evolve(health=45.0, mood=30.0, illness=True)
+        treated = interact(weak, "doctor", self.now, self.tuning)
+        self.assertGreater(treated.health, weak.health)
+        self.assertGreater(treated.mood, weak.mood)
+        self.assertEqual(treated.energy, weak.energy)
+
+    def test_doctor_ok_does_not_boost_healthy_pet(self) -> None:
+        healthy = self.pet.evolve(health=90.0, mood=80.0, energy=70.0, illness=False)
+        checked = interact(healthy, "doctor", self.now, self.tuning)
+        self.assertEqual(checked.health, healthy.health)
+        self.assertEqual(checked.energy, healthy.energy)
+        self.assertIn("nao precisava", checked.last_message)
 
     def test_neglect_causes_illness(self) -> None:
         weak = self.pet.evolve(hunger=92.0, energy=8.0, hygiene=6.0, health=42.0)

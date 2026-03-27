@@ -484,19 +484,18 @@ def interact(pet: Pet, action: str, now: datetime, tuning: Tuning) -> Pet:
         if hunger_before <= 5.0:
             message = f"{pet.name} ja esta satisfeito. Melhor guardar o resto para depois."
         else:
-            hunger = clamp(hunger - 28)
-            hunger_relief = clamp(hunger_before - hunger, 0.0, 28.0)
-            feed_ratio = hunger_relief / 28.0 if hunger_relief > 0 else 0.0
-            energy = clamp(energy + (6 * feed_ratio))
-            mood = clamp(mood + (8 * feed_ratio))
-            health = clamp(health + (3 * feed_ratio))
+            hunger_relief = clamp(max(6.0, min(30.0, hunger_before * 0.65)))
+            hunger = clamp(hunger - hunger_relief)
+            feed_ratio = hunger_relief / 30.0
+            energy = clamp(energy + (4.0 * feed_ratio))
+            mood = clamp(mood + (6.0 * feed_ratio))
+            health = clamp(health + (2.0 * feed_ratio))
             message = flavor.feed.format(name=pet.name)
     elif action == "play":
-        hunger = clamp(hunger + 10)
-        energy = clamp(energy - 14)
-        hygiene = clamp(hygiene - 7)
-        mood = clamp(mood + 16)
-        health = clamp(health + 2)
+        hunger = clamp(hunger + 8)
+        energy = clamp(energy - 12)
+        hygiene = clamp(hygiene - 6)
+        mood = clamp(mood + 14)
         message = flavor.play.format(name=pet.name)
     elif action == "sleep":
         if pet.is_sleeping:
@@ -504,18 +503,16 @@ def interact(pet: Pet, action: str, now: datetime, tuning: Tuning) -> Pet:
         else:
             is_sleeping = True
             sleeping_since = now
-            mood = clamp(mood + 4)
+            mood = clamp(mood + 2)
             message = flavor.sleep.format(name=pet.name)
     elif action == "clean":
-        hygiene = clamp(hygiene + 32)
-        mood = clamp(mood + 6)
-        health = clamp(health + 4)
+        hygiene = clamp(hygiene + 28)
+        mood = clamp(mood + 4)
         message = flavor.clean.format(name=pet.name)
     elif action == "doctor":
         if pet.illness or pet.health < 70:
-            health = clamp(health + 24)
-            mood = clamp(mood + 5)
-            energy = clamp(energy + 4)
+            health = clamp(health + 20)
+            mood = clamp(mood + 3)
             message = flavor.doctor.format(name=pet.name)
         else:
             message = flavor.doctor_ok.format(name=pet.name)
