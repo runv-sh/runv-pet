@@ -282,6 +282,16 @@ class SimulatorTests(unittest.TestCase):
         then = self.now - timedelta(hours=1, minutes=5)
         self.assertEqual(human_ago(then, self.now), "1 hora atras")
 
+    def test_hunger_bar_is_fuller_when_pet_is_less_hungry(self) -> None:
+        calm = self.pet.evolve(hunger=5.0)
+        screen = status_screen(calm, self.now)
+        self.assertIn("fome [#####################-]   5.0", screen)
+
+    def test_sleeping_status_shows_wake_eta(self) -> None:
+        sleepy = self.pet.evolve(is_sleeping=True, sleeping_since=self.now, energy=69.0)
+        screen = status_screen(sleepy, self.now)
+        self.assertIn("Acorda em 2h 6min.", screen)
+
     def test_species_list_grew(self) -> None:
         self.assertIn("rabbit", SPECIES)
         self.assertIn("turtle", SPECIES)

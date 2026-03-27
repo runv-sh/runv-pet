@@ -448,10 +448,11 @@ def pick_art(pet: Pet) -> str:
     return _paint(art[mood], ANSI.get(species))
 
 
-def bar(label: str, value: float, invert: bool = False, width: int = 22) -> str:
+def bar(label: str, value: float, invert: bool = False, width: int = 22, invert_fill: bool = False) -> str:
     shown = 100.0 - value if invert else value
     shown = max(0.0, min(100.0, shown))
-    filled = round((shown / 100.0) * width)
+    fill_source = 100.0 - shown if invert_fill else shown
+    filled = round((fill_source / 100.0) * width)
     meter = "#" * filled + "-" * (width - filled)
     return f"{label:>9} [{meter}] {shown:5.1f}"
 
@@ -475,6 +476,21 @@ def human_ago(from_dt: datetime, to_dt: datetime) -> str:
     if delta < 60:
         return "agora mesmo"
     return f"{human_delta(from_dt, to_dt)} atras"
+
+
+def _sleep_eta_line(pet: Pet, wake_energy: float = 92.0, gain_per_hour: float = 11.0) -> str:
+    remaining = max(0.0, wake_energy - pet.energy)
+    if remaining <= 0.5:
+        return "Acorda em instantes, assim que voce voltar a falar com ele."
+    total_minutes = max(1, int(((remaining / gain_per_hour) * 3600 + 59) // 60))
+    if total_minutes < 60:
+        unit = "minuto" if total_minutes == 1 else "minutos"
+        return f"Acorda em {total_minutes} {unit}."
+    hours, minutes = divmod(total_minutes, 60)
+    if minutes == 0:
+        unit = "hora" if hours == 1 else "horas"
+        return f"Acorda em {hours} {unit}."
+    return f"Acorda em {hours}h {minutes}min."
 
 
 def _pet_hint(pet: Pet) -> str:
@@ -523,7 +539,7 @@ def status_screen(pet: Pet, now: datetime, notice: MailNotice | None = None) -> 
             name_line,
             pick_art(pet),
             state_line,
-            bar("fome", pet.hunger),
+            bar("fome", pet.hunger, invert_fill=True),
             bar("energia", pet.energy),
             bar("humor", pet.mood),
             bar("higiene", pet.hygiene),
@@ -535,6 +551,7 @@ def status_screen(pet: Pet, now: datetime, notice: MailNotice | None = None) -> 
             f"Idade: {pet.age_hours / 24.0:.1f} dias | Criado: {human_ago(created, utc_now)}",
             f"Ultima interacao: {human_ago(interaction, utc_now)}",
             f"Ultimo update: {human_ago(pet.last_update_at, utc_now)}",
+            (_sleep_eta_line(pet) if pet.is_sleeping else None),
             "",
             _paint(
                 "Acoes: init | status | path | line | feed | play | sleep | clean | rename NOVO_NOME | doctor | carry | mail | migrate | export | import | help",
@@ -544,7 +561,7 @@ def status_screen(pet: Pet, now: datetime, notice: MailNotice | None = None) -> 
     )
     if pet.cause_of_death:
         lines.insert(6 if banner is not None else 5, f"Causa da morte: {pet.cause_of_death}")
-    return "\n".join(lines)
+    return "\n".join(line for line in lines if line is not None)
 
 
 def runv_status_screen(status: ServerPetStatus) -> str:
