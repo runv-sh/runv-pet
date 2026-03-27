@@ -539,7 +539,7 @@ def status_screen(pet: Pet, now: datetime, notice: MailNotice | None = None) -> 
             name_line,
             pick_art(pet),
             state_line,
-            bar("fome", pet.hunger, invert_fill=True),
+            bar("fome", pet.hunger, invert=True),
             bar("energia", pet.energy),
             bar("humor", pet.mood),
             bar("higiene", pet.hygiene),

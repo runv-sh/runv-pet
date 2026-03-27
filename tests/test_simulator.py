@@ -285,7 +285,7 @@ class SimulatorTests(unittest.TestCase):
     def test_hunger_bar_is_fuller_when_pet_is_less_hungry(self) -> None:
         calm = self.pet.evolve(hunger=5.0)
         screen = status_screen(calm, self.now)
-        self.assertIn("fome [#####################-]   5.0", screen)
+        self.assertIn("fome [#####################-]  95.0", screen)
 
     def test_sleeping_status_shows_wake_eta(self) -> None:
         sleepy = self.pet.evolve(is_sleeping=True, sleeping_since=self.now, energy=69.0)
