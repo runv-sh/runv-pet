@@ -189,21 +189,19 @@ def help_text() -> str:
 
         Comandos:
           gotchi                 abre a tela textual principal
-          gotchi init           cria seu pet
-          gotchi status         mostra o estado atual
-          gotchi feed           alimenta o pet
-          gotchi play           brinca com o pet
-          gotchi sleep          coloca o pet para dormir
-          gotchi clean          limpa o pet
-          gotchi rename NOME    renomeia o pet
-          gotchi doctor         tenta tratar doenca / recuperar saude
-          gotchi help           mostra esta ajuda
-
-        Persistencia:
-          Banco SQLite: $XDG_DATA_HOME/runv-pet/gotchi.db
-          Config opcional: $XDG_CONFIG_HOME/runv-pet/gotchi.json
+          gotchi init            cria seu pet
+          gotchi status          mostra o estado atual
+          gotchi feed            alimenta o pet
+          gotchi play            brinca com o pet
+          gotchi sleep           coloca o pet para dormir
+          gotchi clean           limpa o pet
+          gotchi rename NOME     renomeia o pet
+          gotchi doctor          tenta tratar doenca / recuperar saude
+          gotchi help            mostra esta ajuda
 
         Sem daemon:
           O estado e recalculado pelo tempo decorrido desde o ultimo update.
+
+        desenvolvido por admin@runv.club
         """
     ).strip()
